@@ -12,6 +12,18 @@ import android.support.v7.widget.RecyclerView
 import android.widget.Toast
 import com.example.tokend.adapter.ContactsAdapter
 import com.codility.contacts.model.Contact
+import android.content.res.AssetFileDescriptor
+import android.provider.ContactsContract.Contacts.Photo.DISPLAY_PHOTO
+import android.net.Uri.withAppendedPath
+import android.content.ContentUris
+import android.net.Uri
+import java.io.IOException
+import java.io.InputStream
+import android.graphics.drawable.Drawable
+
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+
+
 
 
 @RequiresApi(Build.VERSION_CODES.M)
@@ -70,8 +82,7 @@ class MainActivity : AppCompatActivity() {
                 val id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
                 val name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
                 val phoneNumber = (cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))).toInt()
-                val photo  = (cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.PHOTO_URI))).toInt()
-
+                val photoUri = (cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)))
 
                 if (phoneNumber > 0) {
                     val cursorPhone = contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -82,7 +93,7 @@ class MainActivity : AppCompatActivity() {
 
                             val number  =  cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
 
-                            contacts.add(Contact(name, number))
+                            contacts.add(Contact(name, photoUri))
                         }
                     }
 
@@ -102,9 +113,16 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 
-    public override fun onStop() {
-        super.onStop()
-      this.finish()
+    fun openDisplayPhoto(contactId: Long): InputStream? {
+        val contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId)
+        val displayPhotoUri = Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Photo.DISPLAY_PHOTO)
+        try {
+            val fd = contentResolver.openAssetFileDescriptor(displayPhotoUri, "r")
+            return fd!!.createInputStream()
+        } catch (e: IOException) {
+            return null
+        }
+
     }
 
 }

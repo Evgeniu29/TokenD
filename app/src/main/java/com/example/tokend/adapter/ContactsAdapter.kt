@@ -51,9 +51,14 @@ class ContactsAdapter(private val contactList: ArrayList<Contact>) : RecyclerVie
 
             val txt = itemView.findViewById<TextView>(R.id.txt)
 
-            val image = itemView.findViewById<ImageView>(R.id.photo)
+            val photo = itemView.findViewById<ImageView>(R.id.photo)
 
             txt.text = contact.name
+
+            Glide.with(itemView)
+                .load(contact.image)
+                .placeholder(R.drawable.noimage).error(R.drawable.noimage).fallback(R.drawable.noimage)
+                .into(photo);
 
 
         }}
