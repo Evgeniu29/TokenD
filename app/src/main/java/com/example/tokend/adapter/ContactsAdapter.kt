@@ -1,25 +1,20 @@
 package com.example.tokend.adapter
 
 import android.net.Uri
-import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 
 import com.codility.contacts.model.Contact
 import com.example.tokend.R
 import com.example.tokend.model.OnCallListener
-import android.graphics.BitmapFactory
-import android.provider.ContactsContract
-import android.content.ContentUris
-import android.graphics.Bitmap
-import java.io.IOException
 
-
-class ContactsAdapter(private val contactList: ArrayList<Contact>) : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
+class ContactsAdapter(private var contactList: ArrayList<Contact>) : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
 
     private var onCallListener: OnCallListener<Contact>? = null
 
@@ -62,4 +57,12 @@ class ContactsAdapter(private val contactList: ArrayList<Contact>) : RecyclerVie
 
 
         }}
+
+    fun filterList(filteredNames: ArrayList < Contact > ) {
+        Log.e("list", filteredNames.toString())
+        Log.e("list", filteredNames.size.toString())
+        // this.dataList.clear()
+        contactList = filteredNames
+        notifyDataSetChanged()
+    }
 }

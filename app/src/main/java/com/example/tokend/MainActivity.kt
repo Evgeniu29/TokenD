@@ -5,29 +5,30 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
-import android.support.annotation.RequiresApi
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.widget.Toast
 import com.example.tokend.adapter.ContactsAdapter
 import com.codility.contacts.model.Contact
-import android.content.res.AssetFileDescriptor
-import android.provider.ContactsContract.Contacts.Photo.DISPLAY_PHOTO
-import android.net.Uri.withAppendedPath
 import android.content.ContentUris
 import android.net.Uri
 import java.io.IOException
 import java.io.InputStream
-import android.graphics.drawable.Drawable
 
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-
-
-
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.View
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import kotlinx.android.synthetic.main.activity_main.*
 
 @RequiresApi(Build.VERSION_CODES.M)
 class MainActivity : AppCompatActivity() {
+    var contactList = ArrayList<Contact>()
+    lateinit
+    var recycler: RecyclerView
+    private
+    var adapter: ContactsAdapter? = null
 
     private val PERMISSIONS_REQUEST_READ_CONTACTS = 100
 
@@ -35,6 +36,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        recycler = findViewById(R.id.contactList)
+
+        recycler.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
 
         loadContacts()
 
@@ -53,17 +58,35 @@ class MainActivity : AppCompatActivity() {
                 ), PERMISSIONS_REQUEST_READ_CONTACTS
             )
             //callback onRequestPermissionsResult
-        }
+        } else {
 
-        else {
-            val contacts: RecyclerView = findViewById(R.id.contactList)
-            contacts.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-            val adapter = ContactsAdapter(getContacts())
-            contacts.adapter = adapter
+            adapter = ContactsAdapter(getContacts())
+            recycler.adapter = adapter
+
+            searchbrandedit.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(
+                    charSequence: CharSequence,
+                    i: Int,
+                    i1: Int,
+                    i2: Int
+                ) {
+                }
+
+                override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
+                override fun afterTextChanged(editable: Editable) {
+                    //after the change calling the method and passing the search input
+                    filter(editable.toString())
+                }
+            })
+
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         if (requestCode == PERMISSIONS_REQUEST_READ_CONTACTS) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 loadContacts()
@@ -73,27 +96,42 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getContacts(): ArrayList<Contact> {
-        val contacts = ArrayList<Contact>()
-        val cursor = contentResolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC")
+    private  fun getContacts(): ArrayList<Contact> {
+
+        val cursor = contentResolver.query(
+            ContactsContract.Contacts.CONTENT_URI,
+            null,
+            null,
+            null,
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+        )
 
         if (cursor.count > 0) {
             while (cursor.moveToNext()) {
                 val id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
-                val name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
-                val phoneNumber = (cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))).toInt()
-                val photoUri = (cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)))
+                val name =
+                    cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
+                val phoneNumber =
+                    (cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))).toInt()
+                val photoUri =
+                    (cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)))
 
                 if (phoneNumber > 0) {
-                    val cursorPhone = contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                        null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + "=?", arrayOf(id), null)
+                    val cursorPhone = contentResolver.query(
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        null,
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + "=?",
+                        arrayOf(id),
+                        null
+                    )
 
                     if (cursorPhone.count > 0) {
                         while (cursorPhone.moveToNext()) {
 
-                            val number  =  cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                            val number =
+                                cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
 
-                            contacts.add(Contact(name, photoUri))
+                            contactList.add(Contact(name, photoUri))
                         }
                     }
 
@@ -106,7 +144,7 @@ class MainActivity : AppCompatActivity() {
             showToast("No contacts available!")
         }
         cursor.close()
-        return contacts
+        return contactList
     }
 
     private fun showToast(msg: String) {
@@ -114,8 +152,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun openDisplayPhoto(contactId: Long): InputStream? {
-        val contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId)
-        val displayPhotoUri = Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Photo.DISPLAY_PHOTO)
+        val contactUri =
+            ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, contactId)
+        val displayPhotoUri =
+            Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Photo.DISPLAY_PHOTO)
         try {
             val fd = contentResolver.openAssetFileDescriptor(displayPhotoUri, "r")
             return fd!!.createInputStream()
@@ -125,5 +165,24 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun filter(text: String) {
+        //new array list that will hold the filtered data
+        val filteredNames = ArrayList<Contact>()
+        //looping through existing elements and adding the element to filtered list
+        contactList!!.filterTo(filteredNames) {
+            //if the existing elements contains the search input
+            it.name.toLowerCase().contains(text.toLowerCase()) || it.image!!.toLowerCase().contains(
+                text.toLowerCase()
+            )
+        }
+        //calling a method of the adapter class and passing the filtered list
+        if (filteredNames != null) {
+            adapter!!.filterList(filteredNames)
+        }
+    }
+
 }
+
+
+
 
